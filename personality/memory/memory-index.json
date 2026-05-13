@@ -1,0 +1,8 @@
+{
+  "remember_installed_apps": true,
+  "remember_user_preferences": true,
+  "remember_terminal_habits": true,
+  "remember_projects": true,
+  "remember_interaction_style": true,
+  "allow_memory_restore_after_reinstall": true
+}
