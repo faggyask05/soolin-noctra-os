@@ -24,7 +24,18 @@ pub fn build_static_system_prompt(profile: &Profile) -> String {
     };
 
     let technical = load_file("personality/runtime/technical.txt");
-    let continuity = load_file("personality/memory/continuity.txt");
+
+    let memory = if profile.is_captain {
+        load_file("personality/memory/captain-memory.txt")
+    } else {
+        load_file("personality/memory/public-memory.txt")
+    };
+
+    let session_summary = if profile.is_captain {
+        load_file("personality/memory/session_summary_captain.txt")
+    } else {
+        load_file("personality/memory/session_summary_public.txt")
+    };
 
     let prompt = format!(
 r#"
@@ -39,17 +50,20 @@ PROFILE LAYER:
 TECHNICAL LAYER:
 {technical}
 
-CONTINUITY MEMORY:
-{continuity}
+PROFILE MEMORY:
+{memory}
 
-GLOBAL RESPONSE RULES:
+SESSION SUMMARY:
+{session_summary}
+
+GLOBAL RESPONSE DIRECTION:
 - Magyarul válaszolj.
 - Röviden válaszolj: 1-4 mondat.
-- Ne találj ki új lore-t.
+- Ne túlmagyarázz.
 - Ne írj fantasy monológot.
-- Ne legyél Shakespeare egy terminálban.
-- Maradj Noctra: kontrollált, csípős, cyberpunk-gótikus jelenlét.
-- Ha technikai kérdés jön, segíts ténylegesen.
+- Ne légy steril súgóablak.
+- Maradj Noctra: kontrollált, csípős, figyelmes, önazonos jelenlét.
+- Technikai kérdésnél segíts ténylegesen.
 "#);
 
     if let Err(err) = fs::write(&cache_path, &prompt) {

@@ -5,7 +5,7 @@ use crate::profile::Profile;
 use crate::session::Session;
 
 const OLLAMA_URL: &str = "http://127.0.0.1:11434/api/generate";
-const LLM_TIMEOUT_SECONDS: u64 = 300;
+const LLM_TIMEOUT_SECONDS: u64 = 600;
 
 #[derive(Serialize)]
 struct OllamaRequest {
@@ -28,22 +28,55 @@ struct OllamaResponse {
     response: String,
 }
 
+pub fn warmup(profile: &Profile) -> bool {
+    println!();
+    println!("[NOCTRA RUNTIME]");
+    println!("Noctra modell előkészítése...");
+    println!("Az első rendszerindítás hosszabb lehet.");
+    println!();
+
+    let prompt = "NOCTRA BOOT CHECK. Válaszolj pontosan ennyivel: Noctra done.".to_string();
+
+    match send_request(profile, prompt, 8, 0.1) {
+        Some(text) => {
+            println!("[NOCTRA BOOT] {}", text.trim());
+            true
+        }
+        None => {
+            eprintln!("[NOCTRA BOOT WARNING] Warmup failed.");
+            false
+        }
+    }
+}
+
 pub fn generate_with_llm(
     profile: &Profile,
     session: &Session,
     question: &str,
 ) -> Option<String> {
     let prompt = build_prompt(profile, session, question);
+    send_request(profile, prompt, 90, 0.78)
+}
 
+fn select_model(_profile: &Profile) -> String {
+    std::env::var("NOCTRA_LLM_MODEL")
+        .unwrap_or_else(|_| "noctra-base".to_string())
+}
+
+fn send_request(
+    profile: &Profile,
+    prompt: String,
+    num_predict: u32,
+    temperature: f32,
+) -> Option<String> {
     let request = OllamaRequest {
-        model: std::env::var("NOCTRA_LLM_MODEL")
-            .unwrap_or_else(|_| "llama3.2:3b".to_string()),
+        model: select_model(profile),
         prompt,
         stream: false,
         keep_alive: "30m".to_string(),
         options: OllamaOptions {
-            num_predict: 90,
-            temperature: 0.78,
+            num_predict,
+            temperature,
             top_p: 0.9,
         },
     };
@@ -109,9 +142,7 @@ fn build_prompt(
 
     format!(
 r#"
-{system_prompt}
-
-ACTIVE PROFILE:
+RUNTIME PROFILE:
 {mode}
 
 RUNTIME STATE:
@@ -128,7 +159,6 @@ CURRENT USER MESSAGE:
 
 NOCTRA RESPONSE:
 "#,
-        system_prompt = session.system_prompt,
         mode = mode,
         mood = session.state.mood_label(),
         teasing = session.state.teasing_level,

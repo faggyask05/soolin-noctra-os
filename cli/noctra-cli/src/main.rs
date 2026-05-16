@@ -30,6 +30,7 @@ fn main() {
         "version" => show_version(),
         "profile" => show_profile(),
         "chat" => start_chat_session(),
+        "boot" => boot_noctra(),
         "ask" => {
             if args.len() > 2 {
                 let question = args[2..].join(" ");
@@ -66,7 +67,8 @@ fn show_home() {
     println!("  noctra system check");
     println!("  noctra profile");
     println!("  noctra ask rooftop");
-    println!("  noctra chat");
+    println!("  noctra chat
+  noctra boot");
 
     print_side_glyph("N");
 }
@@ -82,7 +84,8 @@ fn show_help() {
     println!("  noctra shutdown");
     println!("  noctra profile");
     println!("  noctra ask <question>");
-    println!("  noctra chat");
+    println!("  noctra chat
+  noctra boot");
 
     println!();
     println!("{PURPLE}Most már nem csak shell vagyok. Ez már stateful continuity runtime kezd lenni.{RESET}");
@@ -138,9 +141,14 @@ fn start_chat_session() {
 
     print_header("NOCTRA CHAT SESSION");
 
-    println!("{PURPLE}Noctra session aktív.{RESET}");
-    println!("{DIM}Kilépés: exit vagy quit{RESET}");
+    println!("{PURPLE}Noctra session előkészítés alatt.{RESET}");
     println!("{DIM}Aktív profil: {}{RESET}", profile.name);
+    println!("{DIM}Az első indítás hosszabb lehet. Identitásrétegek, cache és modell warmup töltődik.{RESET}");
+    println!();
+
+    println!();
+    println!("{PURPLE}Noctra done. Session aktív.{RESET}");
+    println!("{DIM}Kilépés: exit vagy quit{RESET}");
     println!();
 
     let user_label = if profile.is_captain {
@@ -198,6 +206,20 @@ fn start_chat_session() {
     }
 
     print_side_glyph("CHAT");
+}
+
+
+fn boot_noctra() {
+    let profile = profile::load_profile();
+
+    print_header("NOCTRA BOOT");
+
+    println!("{PURPLE}Profil:{RESET} {}", profile.name);
+    println!("{DIM}Noctra modell előkészítése a háttérfutáshoz.{RESET}");
+
+    llm::warmup(&profile);
+
+    print_side_glyph("BOOT");
 }
 
 fn system_check() {
